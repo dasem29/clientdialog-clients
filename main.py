@@ -11,6 +11,10 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from openai import OpenAI
 
+from supabase import create_client, Client
+
+from datetime import datetime, timezone
+
 from fastapi.responses import FileResponse
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -21,10 +25,18 @@ CLIENTS_FILE = BASE_DIR / "clients.json"
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+
 if not OPENAI_API_KEY:
     raise RuntimeError("Missing OPENAI_API_KEY environment variable.")
 
+if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+    raise RuntimeError("Missing Supabase environment variables.")
+
 client = OpenAI(api_key=OPENAI_API_KEY)
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
 app = FastAPI(title="ClientDialog Clients Backend")
 
@@ -103,6 +115,59 @@ Dacă primești întrebări despre produse, recomandări, dimensiuni, măsurăto
 
     return general_rules
 
+def get_or_create_conversation(client_id: str, session_id: str, user_message: str) -> str:
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    existing = (
+        supabase.table("conversations")
+        .select("id")
+        .eq("client_id", client_id)
+        .eq("session_id", session_id)
+        .limit(1)
+        .execute()
+    )
+
+    if existing.data:
+        conversation_id = existing.data[0]["id"]
+
+        supabase.table("conversations").update(
+            {
+                "last_message_at": now_iso,
+                "last_user_message": user_message,
+            }
+        ).eq("id", conversation_id).execute()
+
+        return conversation_id
+
+    created = (
+        supabase.table("conversations")
+        .insert(
+            {
+                "client_id": client_id,
+                "session_id": session_id,
+                "status": "new",
+                "last_user_message": user_message,
+                "last_message_at": now_iso,
+            }
+        )
+        .execute()
+    )
+
+    return created.data[0]["id"]
+
+
+def save_message(conversation_id: str, client_id: str, session_id: str, role: str, content: str) -> None:
+    supabase.table("messages").insert(
+        {
+            "conversation_id": conversation_id,
+            "client_id": client_id,
+            "session_id": session_id,
+            "role": role,
+            "content": content,
+        }
+    ).execute()
+
+
 @app.get("/test-lumea-perdelelor")
 def test_lumea_perdelelor():
     return FileResponse(PUBLIC_DIR / "test-lumea-perdelelor.html")
@@ -176,6 +241,35 @@ def api_chat(payload: ChatRequest) -> dict[str, Any]:
 
         if not reply:
             reply = "Îți mulțumesc! Am primit mesajul tău și te ajut imediat."
+
+        try:
+            session_id = payload.sessionId or "no-session"
+
+            conversation_id = get_or_create_conversation(
+                client_id=payload.clientId,
+                session_id=session_id,
+                user_message=payload.message.strip(),
+            )
+
+            save_message(
+                conversation_id=conversation_id,
+                client_id=payload.clientId,
+                session_id=session_id,
+                role="user",
+                content=payload.message.strip(),
+            )
+
+            save_message(
+                conversation_id=conversation_id,
+                client_id=payload.clientId,
+                session_id=session_id,
+                role="assistant",
+                content=reply,
+            )
+        except Exception:
+            import traceback
+            print("SUPABASE SAVE ERROR:")
+            traceback.print_exc()
 
         return {
             "ok": True,
