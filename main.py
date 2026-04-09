@@ -328,3 +328,6 @@ def get_conversation_messages(conversation_id: str):
             "messages": []
         }    
     
+@app.get("/conversations-viewer")
+def conversations_viewer():
+    return FileResponse(PUBLIC_DIR / "conversations-viewer.html")    

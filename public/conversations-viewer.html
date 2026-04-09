@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClientDialog · Conversations Viewer</title>
+  <style>
+    :root {
+      --bg: #070b14;
+      --bg-2: #0d1220;
+      --panel: rgba(15, 20, 35, 0.88);
+      --panel-2: rgba(18, 24, 42, 0.96);
+      --line: rgba(255,255,255,0.08);
+      --line-2: rgba(255,255,255,0.12);
+      --text: #eef2ff;
+      --muted: #97a3c7;
+      --muted-2: #7c88ad;
+      --accent: #8b5cf6;
+      --accent-2: #22d3ee;
+      --green: #34d399;
+      --user: linear-gradient(135deg, #7c3aed, #8b5cf6);
+      --assistant: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.035));
+      --shadow: 0 24px 60px rgba(0,0,0,0.35);
+      --radius-xl: 22px;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 10px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(139,92,246,0.18), transparent 22%),
+        radial-gradient(circle at top right, rgba(34,211,238,0.08), transparent 18%),
+        linear-gradient(180deg, var(--bg) 0%, #05070d 100%);
+      color: var(--text);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 24px 24px;
+      mask-image: radial-gradient(circle at center, black 40%, transparent 85%);
+      opacity: 0.28;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 100vh;
+      gap: 16px;
+      padding: 18px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 18px;
+      border-radius: var(--radius-xl);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .brand-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, rgba(124,58,237,0.25), rgba(34,211,238,0.14));
+      border: 1px solid rgba(255,255,255,0.08);
+      font-weight: 800;
+      letter-spacing: 0.3px;
+    }
+
+    .brand-copy {
+      min-width: 0;
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .brand-subtitle {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .top-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .field {
+      min-width: 220px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      outline: none;
+      font-size: 14px;
+    }
+
+    .field::placeholder {
+      color: var(--muted-2);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 16px;
+      min-height: 0;
+    }
+
+    .sidebar,
+    .chat-panel {
+      min-height: 0;
+      border-radius: var(--radius-xl);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      overflow: hidden;
+    }
+
+    .sidebar-head,
+    .chat-head {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .section-subtitle {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .conversation-list {
+      height: calc(100vh - 170px);
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .conversation-card {
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+      padding: 14px;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .conversation-card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(139,92,246,0.36);
+      background: rgba(139,92,246,0.08);
+    }
+
+    .conversation-card.active {
+      border-color: rgba(139,92,246,0.5);
+      background: rgba(139,92,246,0.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+
+    .conversation-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .conversation-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--green);
+      box-shadow: 0 0 10px rgba(52,211,153,0.5);
+      flex-shrink: 0;
+    }
+
+    .conversation-client {
+      font-size: 12px;
+      color: #d9dfff;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .conversation-time {
+      font-size: 11px;
+      color: var(--muted-2);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .conversation-preview {
+      margin-top: 10px;
+      font-size: 14px;
+      line-height: 1.45;
+      color: var(--text);
+      word-break: break-word;
+    }
+
+    .conversation-meta {
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--muted-2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chat-panel {
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .chat-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .chat-head-left {
+      min-width: 0;
+    }
+
+    .chat-title {
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .chat-meta {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chat-status {
+      font-size: 12px;
+      color: #dce4ff;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--line);
+      white-space: nowrap;
+    }
+
+    .messages-wrap {
+      min-height: 0;
+      overflow-y: auto;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background:
+        radial-gradient(circle at top right, rgba(139,92,246,0.08), transparent 20%),
+        radial-gradient(circle at bottom left, rgba(34,211,238,0.05), transparent 18%);
+    }
+
+    .empty-state {
+      height: 100%;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      text-align: center;
+      padding: 30px;
+    }
+
+    .msg-wrap {
+      max-width: 76%;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .msg-wrap.user {
+      align-self: flex-end;
+      align-items: flex-end;
+    }
+
+    .msg-wrap.assistant {
+      align-self: flex-start;
+      align-items: flex-start;
+    }
+
+    .msg-label {
+      font-size: 11px;
+      color: var(--muted-2);
+      padding: 0 6px;
+    }
+
+    .msg-bubble {
+      padding: 13px 14px;
+      border-radius: 18px;
+      line-height: 1.5;
+      font-size: 14px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .msg-wrap.user .msg-bubble {
+      background: var(--user);
+      color: white;
+      border-bottom-right-radius: 7px;
+      box-shadow: 0 14px 30px rgba(124,58,237,0.25);
+    }
+
+    .msg-wrap.assistant .msg-bubble {
+      background: var(--assistant);
+      color: var(--text);
+      border-bottom-left-radius: 7px;
+    }
+
+    .msg-time {
+      font-size: 10px;
+      color: var(--muted-2);
+      padding: 0 6px;
+    }
+
+    .loading {
+      padding: 18px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .conversation-list {
+        height: 340px;
+      }
+
+      .messages-wrap {
+        min-height: 420px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-icon">CD</div>
+        <div class="brand-copy">
+          <div class="brand-title">ClientDialog Viewer</div>
+          <div class="brand-subtitle">Conversații live, filtrate pe business</div>
+        </div>
+      </div>
+
+      <div class="top-controls">
+        <select id="clientSelect" class="field">
+          <option value="lumea_perdelelor">Lumea Perdelelor</option>
+          <option value="hotel_demo">Hotel Demo</option>
+          <option value="restaurant_demo">Restaurant Demo</option>
+          <option value="salon_demo">Salon Demo</option>
+          <option value="service_auto_demo">Service Auto Demo</option>
+        </select>
+
+        <input id="searchInput" class="field" type="text" placeholder="Caută în ultima întrebare..." />
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="sidebar">
+        <div class="sidebar-head">
+          <div class="section-title">Conversații</div>
+          <div class="section-subtitle">Cele mai noi apar primele</div>
+        </div>
+        <div id="conversationList" class="conversation-list">
+          <div class="loading">Se încarcă conversațiile...</div>
+        </div>
+      </div>
+
+      <div class="chat-panel">
+        <div class="chat-head">
+          <div class="chat-head-left">
+            <div id="chatTitle" class="chat-title">Selectează o conversație</div>
+            <div id="chatMeta" class="chat-meta">Mesajele vor apărea aici</div>
+          </div>
+          <div id="chatStatus" class="chat-status">Idle</div>
+        </div>
+
+        <div id="messagesWrap" class="messages-wrap">
+          <div class="empty-state">
+            <div>
+              <div style="font-size: 18px; font-weight: 800; color: var(--text);">Nicio conversație selectată</div>
+              <div style="margin-top: 8px;">Alege un card din stânga ca să vezi mesajele frumos.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const clientSelect = document.getElementById("clientSelect");
+    const searchInput = document.getElementById("searchInput");
+    const conversationList = document.getElementById("conversationList");
+    const messagesWrap = document.getElementById("messagesWrap");
+    const chatTitle = document.getElementById("chatTitle");
+    const chatMeta = document.getElementById("chatMeta");
+    const chatStatus = document.getElementById("chatStatus");
+
+    let conversationsCache = [];
+    let activeConversationId = null;
+
+    function escapeHtml(str) {
+      return (str || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function formatDate(value) {
+      if (!value) return "-";
+      const d = new Date(value);
+      return d.toLocaleString("ro-RO");
+    }
+
+    function prettyClientName(clientId) {
+      const map = {
+        "lumea_perdelelor": "Lumea Perdelelor",
+        "hotel_demo": "Hotel Demo",
+        "restaurant_demo": "Restaurant Demo",
+        "salon_demo": "Salon Demo",
+        "service_auto_demo": "Service Auto Demo"
+      };
+      return map[clientId] || clientId || "Business";
+    }
+
+    async function loadConversations() {
+      const clientId = clientSelect.value;
+      const q = searchInput.value.trim().toLowerCase();
+
+      chatStatus.textContent = "Loading";
+      conversationList.innerHTML = `<div class="loading">Se încarcă conversațiile...</div>`;
+
+      try {
+        const res = await fetch(`/api/conversations?client_id=${encodeURIComponent(clientId)}`);
+        const data = await res.json();
+
+        if (!data.ok) {
+          conversationList.innerHTML = `<div class="loading">Nu am putut încărca conversațiile.</div>`;
+          chatStatus.textContent = "Error";
+          return;
+        }
+
+        conversationsCache = (data.conversations || []).filter(item => {
+          const text = (item.last_user_message || "").toLowerCase();
+          return !q || text.includes(q);
+        });
+
+        if (!conversationsCache.length) {
+          conversationList.innerHTML = `<div class="loading">Nu există conversații pentru filtrul selectat.</div>`;
+          chatStatus.textContent = "Ready";
+          messagesWrap.innerHTML = `
+            <div class="empty-state">
+              <div>
+                <div style="font-size: 18px; font-weight: 800; color: var(--text);">Nicio conversație</div>
+                <div style="margin-top: 8px;">Trimite un mesaj din widget și va apărea aici.</div>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        renderConversationList(conversationsCache);
+        chatStatus.textContent = "Ready";
+
+        if (!activeConversationId || !conversationsCache.some(c => c.id === activeConversationId)) {
+          loadMessages(conversationsCache[0].id);
+        } else {
+          highlightActiveConversation();
+        }
+      } catch (err) {
+        console.error(err);
+        conversationList.innerHTML = `<div class="loading">Eroare la încărcare.</div>`;
+        chatStatus.textContent = "Error";
+      }
+    }
+
+    function renderConversationList(items) {
+      conversationList.innerHTML = items.map(item => `
+        <div class="conversation-card ${item.id === activeConversationId ? "active" : ""}" data-id="${escapeHtml(item.id)}">
+          <div class="conversation-top">
+            <div class="conversation-badge">
+              <span class="dot"></span>
+              <span class="conversation-client">${escapeHtml(prettyClientName(item.client_id))}</span>
+            </div>
+            <div class="conversation-time">${escapeHtml(formatDate(item.last_message_at))}</div>
+          </div>
+          <div class="conversation-preview">${escapeHtml(item.last_user_message || "(fără preview)")}</div>
+          <div class="conversation-meta">Session: ${escapeHtml(item.session_id || "-")}</div>
+        </div>
+      `).join("");
+
+      document.querySelectorAll(".conversation-card").forEach(card => {
+        card.addEventListener("click", () => {
+          const id = card.dataset.id;
+          loadMessages(id);
+        });
+      });
+    }
+
+    function highlightActiveConversation() {
+      document.querySelectorAll(".conversation-card").forEach(card => {
+        card.classList.toggle("active", card.dataset.id === activeConversationId);
+      });
+    }
+
+    async function loadMessages(conversationId) {
+      activeConversationId = conversationId;
+      highlightActiveConversation();
+
+      const conversation = conversationsCache.find(c => c.id === conversationId);
+      chatTitle.textContent = conversation ? prettyClientName(conversation.client_id) : "Conversație";
+      chatMeta.textContent = conversation
+        ? `Session: ${conversation.session_id || "-"} · Ultima activitate: ${formatDate(conversation.last_message_at)}`
+        : "Se încarcă...";
+      chatStatus.textContent = "Loading";
+      messagesWrap.innerHTML = `<div class="loading">Se încarcă mesajele...</div>`;
+
+      try {
+        const res = await fetch(`/api/conversations/${encodeURIComponent(conversationId)}/messages`);
+        const data = await res.json();
+
+        if (!data.ok) {
+          messagesWrap.innerHTML = `<div class="loading">Nu am putut încărca mesajele.</div>`;
+          chatStatus.textContent = "Error";
+          return;
+        }
+
+        const messages = data.messages || [];
+
+        if (!messages.length) {
+          messagesWrap.innerHTML = `
+            <div class="empty-state">
+              <div>
+                <div style="font-size: 18px; font-weight: 800; color: var(--text);">Niciun mesaj</div>
+                <div style="margin-top: 8px;">Conversația există, dar nu are mesaje salvate.</div>
+              </div>
+            </div>
+          `;
+          chatStatus.textContent = "Ready";
+          return;
+        }
+
+        messagesWrap.innerHTML = messages.map(msg => `
+          <div class="msg-wrap ${msg.role === "user" ? "user" : "assistant"}">
+            <div class="msg-label">${msg.role === "user" ? "Client" : "Asistent"}</div>
+            <div class="msg-bubble">${escapeHtml(msg.content || "")}</div>
+            <div class="msg-time">${escapeHtml(formatDate(msg.created_at))}</div>
+          </div>
+        `).join("");
+
+        messagesWrap.scrollTop = messagesWrap.scrollHeight;
+        chatStatus.textContent = "Ready";
+      } catch (err) {
+        console.error(err);
+        messagesWrap.innerHTML = `<div class="loading">Eroare la încărcarea mesajelor.</div>`;
+        chatStatus.textContent = "Error";
+      }
+    }
+
+    clientSelect.addEventListener("change", () => {
+      activeConversationId = null;
+      loadConversations();
+    });
+
+    searchInput.addEventListener("input", () => {
+      loadConversations();
+    });
+
+    loadConversations();
+  </script>
+</body>
+</html>
