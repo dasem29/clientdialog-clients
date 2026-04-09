@@ -306,3 +306,25 @@ def list_conversations(client_id: str):
             "conversations": []
         }        
     
+@app.get("/api/conversations/{conversation_id}/messages")
+def get_conversation_messages(conversation_id: str):
+    try:
+        result = (
+            supabase.table("messages")
+            .select("*")
+            .eq("conversation_id", conversation_id)
+            .order("created_at", desc=False)
+            .execute()
+        )
+
+        return {
+            "ok": True,
+            "messages": result.data or []
+        }
+    except Exception as e:
+        return {
+            "ok": False,
+            "error": str(e),
+            "messages": []
+        }    
+    
