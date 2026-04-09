@@ -283,3 +283,26 @@ def api_chat(payload: ChatRequest) -> dict[str, Any]:
             "ok": False,
             "reply": f"Eroare backend: {repr(e)}"
         }
+        
+@app.get("/api/conversations")
+def list_conversations(client_id: str):
+    try:
+        result = (
+            supabase.table("conversations")
+            .select("*")
+            .eq("client_id", client_id)
+            .order("last_message_at", desc=True)
+            .execute()
+        )
+
+        return {
+            "ok": True,
+            "conversations": result.data or []
+        }
+    except Exception as e:
+        return {
+            "ok": False,
+            "error": str(e),
+            "conversations": []
+        }        
+    
