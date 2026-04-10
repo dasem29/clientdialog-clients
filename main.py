@@ -345,7 +345,12 @@ def get_conversation_messages(conversation_id: str, request: Request):
     
 @app.get("/conversations-viewer")
 def conversations_viewer(request: Request):
-    require_viewer_auth(request)
+    token = request.cookies.get("viewer_session")
+    expected = f"{VIEWER_SESSION_SECRET}:{VIEWER_USERNAME}"
+
+    if token != expected:
+        return RedirectResponse(url="/viewer-login", status_code=303)
+
     return FileResponse(PUBLIC_DIR / "conversations-viewer.html")    
 
 @app.get("/viewer-login")
