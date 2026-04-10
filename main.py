@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -15,7 +15,7 @@ from supabase import create_client, Client
 
 from datetime import datetime, timezone
 
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 
 BASE_DIR = Path(__file__).resolve().parent
 PUBLIC_DIR = BASE_DIR / "public"
@@ -28,11 +28,18 @@ OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
+VIEWER_USERNAME = os.getenv("VIEWER_USERNAME")
+VIEWER_PASSWORD = os.getenv("VIEWER_PASSWORD")
+VIEWER_SESSION_SECRET = os.getenv("VIEWER_SESSION_SECRET")
+
 if not OPENAI_API_KEY:
     raise RuntimeError("Missing OPENAI_API_KEY environment variable.")
 
 if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
     raise RuntimeError("Missing Supabase environment variables.")
+
+if not VIEWER_USERNAME or not VIEWER_PASSWORD or not VIEWER_SESSION_SECRET:
+    raise RuntimeError("Missing viewer auth environment variables.")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -168,6 +175,12 @@ def save_message(conversation_id: str, client_id: str, session_id: str, role: st
     ).execute()
 
 
+def require_viewer_auth(request: Request):
+    token = request.cookies.get("viewer_session")
+    expected = f"{VIEWER_SESSION_SECRET}:{VIEWER_USERNAME}"
+    if token != expected:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
 @app.get("/test-lumea-perdelelor")
 def test_lumea_perdelelor():
     return FileResponse(PUBLIC_DIR / "test-lumea-perdelelor.html")
@@ -285,7 +298,8 @@ def api_chat(payload: ChatRequest) -> dict[str, Any]:
         }
         
 @app.get("/api/conversations")
-def list_conversations(client_id: str):
+def list_conversations(client_id: str, request: Request):
+    require_viewer_auth(request)
     try:
         result = (
             supabase.table("conversations")
@@ -307,7 +321,8 @@ def list_conversations(client_id: str):
         }        
     
 @app.get("/api/conversations/{conversation_id}/messages")
-def get_conversation_messages(conversation_id: str):
+def get_conversation_messages(conversation_id: str, request: Request):
+    require_viewer_auth(request)
     try:
         result = (
             supabase.table("messages")
@@ -329,5 +344,34 @@ def get_conversation_messages(conversation_id: str):
         }    
     
 @app.get("/conversations-viewer")
-def conversations_viewer():
+def conversations_viewer(request: Request):
+    require_viewer_auth(request)
     return FileResponse(PUBLIC_DIR / "conversations-viewer.html")    
+
+@app.get("/viewer-login")
+def viewer_login_page():
+    return FileResponse(PUBLIC_DIR / "viewer-login.html")
+
+
+@app.post("/viewer-login")
+def viewer_login(username: str = Form(...), password: str = Form(...)):
+    if username != VIEWER_USERNAME or password != VIEWER_PASSWORD:
+        return RedirectResponse(url="/viewer-login", status_code=303)
+
+    response = RedirectResponse(url="/conversations-viewer", status_code=303)
+    response.set_cookie(
+        key="viewer_session",
+        value=f"{VIEWER_SESSION_SECRET}:{VIEWER_USERNAME}",
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=60 * 60 * 8,
+    )
+    return response
+
+
+@app.get("/viewer-logout")
+def viewer_logout():
+    response = RedirectResponse(url="/viewer-login", status_code=303)
+    response.delete_cookie("viewer_session")
+    return response
