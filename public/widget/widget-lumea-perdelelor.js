@@ -99,35 +99,100 @@
         }
 
         .launcher {
-          width: 68px;
-          height: 68px;
-          border: 0;
+          width: 72px;
+          height: 72px;
+          border: 1px solid rgba(212,184,122,.30);
           border-radius: 999px;
           cursor: pointer;
-          color: #fff;
+          color: #f8f5ef;
           background:
-            radial-gradient(circle at 30% 25%, rgba(255,255,255,.18), transparent 28%),
-            linear-gradient(135deg, ${UI.accent}, ${UI.accentDark});
+            radial-gradient(circle at 28% 22%, rgba(255,255,255,.24), transparent 24%),
+            radial-gradient(circle at 72% 78%, rgba(212,184,122,.16), transparent 26%),
+            linear-gradient(135deg, #0f3f36 0%, #195346 52%, #6e533d 100%);
           box-shadow:
-            0 18px 38px rgba(122,90,67,.26),
-            inset 0 1px 0 rgba(255,255,255,.18);
+            0 20px 40px rgba(9, 32, 28, .34),
+            0 0 0 1px rgba(255,255,255,.04),
+            inset 0 1px 0 rgba(255,255,255,.16),
+            inset 0 -10px 20px rgba(0,0,0,.10);
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: transform .18s ease, box-shadow .18s ease;
+          transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .launcher::before {
+          content: "";
+          position: absolute;
+          inset: -6px;
+          border-radius: 999px;
+          background: radial-gradient(circle, rgba(212,184,122,.20) 0%, rgba(212,184,122,0) 68%);
+          opacity: .55;
+          z-index: 0;
+          pointer-events: none;
+        }
+
+        .launcher::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          border-radius: 999px;
+          background: linear-gradient(120deg, transparent 28%, rgba(255,255,255,.14) 48%, transparent 68%);
+          transform: translateX(-135%);
+          transition: transform .55s ease;
+          z-index: 1;
+          pointer-events: none;
         }
 
         .launcher:hover {
-          transform: translateY(-2px);
+          transform: translateY(-2px) scale(1.03);
+          filter: saturate(1.05);
           box-shadow:
-            0 24px 46px rgba(122,90,67,.32),
-            inset 0 1px 0 rgba(255,255,255,.18);
+            0 26px 52px rgba(9, 32, 28, .42),
+            0 0 0 1px rgba(212,184,122,.14),
+            inset 0 1px 0 rgba(255,255,255,.18),
+            inset 0 -10px 20px rgba(0,0,0,.12);
+        }
+
+        .launcher:hover::after {
+          transform: translateX(135%);
+        }
+
+        .launcher svg {
+          position: relative;
+          z-index: 2;
+          width: 28px;
+          height: 28px;
+          filter: drop-shadow(0 1px 1px rgba(0,0,0,.12));
+        }
+
+        .launcher-badge {
+          position: absolute;
+          right: -2px;
+          top: -2px;
+          min-width: 22px;
+          height: 22px;
+          padding: 0 6px;
+          border-radius: 999px;
+          background: linear-gradient(135deg, #d4b87a, #b7924b);
+          color: #18362f;
+          font-size: 10px;
+          font-weight: 800;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow:
+            0 8px 16px rgba(183,146,75,.28),
+            inset 0 1px 0 rgba(255,255,255,.28);
+          z-index: 3;
+          letter-spacing: .02em;
         }
 
         .panel {
           position: absolute;
           right: 0;
-          bottom: 86px;
+          bottom: 90px;
           width: 392px;
           height: 690px;
           display: none;
@@ -404,6 +469,11 @@
         }
 
         @media (max-width: 640px) {
+          .launcher {
+            width: 66px;
+            height: 66px;
+          }
+
           .panel {
             width: min(392px, calc(100vw - 24px));
             height: min(78vh, 690px);
@@ -413,8 +483,11 @@
 
       <div class="root">
         <button class="launcher" type="button" aria-label="Deschide chatul">
-          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" aria-hidden="true">
-            <path d="M7 9.5h10M7 13h7m-8.5 7 2.3-3.4c.3-.4.7-.6 1.2-.6H17a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4H7A4 4 0 0 0 3 7v5a4 4 0 0 0 4 4h.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <span class="launcher-badge">AI</span>
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M6.5 4.5h11a2 2 0 0 1 2 2V17l-2.2-1.9a1.8 1.8 0 0 0-1.2-.46H6.5a2 2 0 0 1-2-2v-6.1a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M8.3 8.7h7.4M8.3 11.7h5.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M4.5 9.2v3.3a2.5 2.5 0 0 0 2.5 2.5h1.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
           </svg>
         </button>
 
