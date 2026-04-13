@@ -99,21 +99,21 @@
         }
 
         .launcher {
-          width: 72px;
-          height: 72px;
-          border: 1px solid rgba(212,184,122,.30);
-          border-radius: 999px;
+          width: 78px;
+          height: 78px;
+          border: 2px solid rgba(220, 191, 120, .58);
+          border-radius: 26px;
           cursor: pointer;
-          color: #f8f5ef;
+          color: #fffaf0;
           background:
-            radial-gradient(circle at 28% 22%, rgba(255,255,255,.24), transparent 24%),
-            radial-gradient(circle at 72% 78%, rgba(212,184,122,.16), transparent 26%),
-            linear-gradient(135deg, #0f3f36 0%, #195346 52%, #6e533d 100%);
+            radial-gradient(circle at 24% 18%, rgba(255,255,255,.28), transparent 20%),
+            radial-gradient(circle at 78% 80%, rgba(220,191,120,.16), transparent 24%),
+            linear-gradient(145deg, #082a24 0%, #0f4339 48%, #7f6241 100%);
           box-shadow:
-            0 20px 40px rgba(9, 32, 28, .34),
-            0 0 0 1px rgba(255,255,255,.04),
-            inset 0 1px 0 rgba(255,255,255,.16),
-            inset 0 -10px 20px rgba(0,0,0,.10);
+            0 24px 52px rgba(6, 22, 19, .42),
+            0 0 28px rgba(220,191,120,.16),
+            inset 0 1px 0 rgba(255,255,255,.18),
+            inset 0 -10px 20px rgba(0,0,0,.14);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -122,37 +122,24 @@
           overflow: hidden;
         }
 
-        .launcher::before {
-          content: "";
-          position: absolute;
-          inset: -6px;
-          border-radius: 999px;
-          background: radial-gradient(circle, rgba(212,184,122,.20) 0%, rgba(212,184,122,0) 68%);
-          opacity: .55;
-          z-index: 0;
-          pointer-events: none;
-        }
-
         .launcher::after {
           content: "";
           position: absolute;
           inset: 0;
-          border-radius: 999px;
-          background: linear-gradient(120deg, transparent 28%, rgba(255,255,255,.14) 48%, transparent 68%);
+          background: linear-gradient(120deg, transparent 28%, rgba(255,255,255,.16) 48%, transparent 68%);
           transform: translateX(-135%);
           transition: transform .55s ease;
-          z-index: 1;
           pointer-events: none;
         }
 
         .launcher:hover {
-          transform: translateY(-2px) scale(1.03);
-          filter: saturate(1.05);
+          transform: translateY(-3px) scale(1.04);
+          filter: saturate(1.08);
           box-shadow:
-            0 26px 52px rgba(9, 32, 28, .42),
-            0 0 0 1px rgba(212,184,122,.14),
-            inset 0 1px 0 rgba(255,255,255,.18),
-            inset 0 -10px 20px rgba(0,0,0,.12);
+            0 30px 62px rgba(6, 22, 19, .52),
+            0 0 36px rgba(220,191,120,.24),
+            inset 0 1px 0 rgba(255,255,255,.22),
+            inset 0 -12px 24px rgba(0,0,0,.18);
         }
 
         .launcher:hover::after {
@@ -160,30 +147,30 @@
         }
 
         .launcher svg {
+          width: 31px;
+          height: 31px;
           position: relative;
           z-index: 2;
-          width: 28px;
-          height: 28px;
-          filter: drop-shadow(0 1px 1px rgba(0,0,0,.12));
+          filter: drop-shadow(0 1px 2px rgba(0,0,0,.18));
         }
 
         .launcher-badge {
           position: absolute;
-          right: -2px;
-          top: -2px;
-          min-width: 22px;
-          height: 22px;
-          padding: 0 6px;
+          right: -5px;
+          top: -5px;
+          min-width: 24px;
+          height: 24px;
+          padding: 0 7px;
           border-radius: 999px;
-          background: linear-gradient(135deg, #d4b87a, #b7924b);
-          color: #18362f;
+          background: linear-gradient(135deg, #e6cd8d, #bb8f43);
+          color: #16352f;
           font-size: 10px;
-          font-weight: 800;
+          font-weight: 900;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           box-shadow:
-            0 8px 16px rgba(183,146,75,.28),
+            0 10px 20px rgba(187,143,67,.34),
             inset 0 1px 0 rgba(255,255,255,.28);
           z-index: 3;
           letter-spacing: .02em;
@@ -192,7 +179,7 @@
         .panel {
           position: absolute;
           right: 0;
-          bottom: 90px;
+          bottom: 92px;
           width: 392px;
           height: 690px;
           display: none;
@@ -470,8 +457,20 @@
 
         @media (max-width: 640px) {
           .launcher {
-            width: 66px;
-            height: 66px;
+            width: 70px;
+            height: 70px;
+            border-radius: 22px;
+          }
+
+          .launcher svg {
+            width: 28px;
+            height: 28px;
+          }
+
+          .launcher-badge {
+            min-width: 22px;
+            height: 22px;
+            font-size: 9px;
           }
 
           .panel {
@@ -485,9 +484,9 @@
         <button class="launcher" type="button" aria-label="Deschide chatul">
           <span class="launcher-badge">AI</span>
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M6.5 4.5h11a2 2 0 0 1 2 2V17l-2.2-1.9a1.8 1.8 0 0 0-1.2-.46H6.5a2 2 0 0 1-2-2v-6.1a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M8.3 8.7h7.4M8.3 11.7h5.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-            <path d="M4.5 9.2v3.3a2.5 2.5 0 0 0 2.5 2.5h1.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M6.5 4.5h11a2 2 0 0 1 2 2V17l-2.2-1.9a1.8 1.8 0 0 0-1.2-.46H6.5a2 2 0 0 1-2-2v-6.1a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M8.4 8.6h7.2M8.4 11.8h4.8" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+            <path d="M4.7 9.1v3.1A2.8 2.8 0 0 0 7.5 15h1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
           </svg>
         </button>
 
@@ -567,7 +566,7 @@
 
     const bubble = document.createElement("div");
     bubble.className = "bubble bot";
-    bubble.innerHTML = `<div class="typing"><span></span><span></span><span></span></div>`;
+    bubble.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
 
     row.appendChild(bubble);
     messages.appendChild(row);
@@ -580,7 +579,7 @@
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Accept": "application/json"
+        Accept: "application/json"
       },
       body: JSON.stringify({
         clientId: CLIENT_ID,
@@ -594,7 +593,7 @@
     if (!res.ok) {
       const txt = await res.text();
       console.error("CHAT BACKEND ERROR:", res.status, txt);
-      throw new Error(`HTTP ${res.status}`);
+      throw new Error("HTTP " + res.status);
     }
 
     return await res.json();
